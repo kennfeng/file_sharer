@@ -1,0 +1,8 @@
+<h2>File Ready for Download</h2>
+
+<p><strong>File Name:</strong> {{ file.file.name|slice:"8:" }}</p>
+<p>This link can only be used once.</p>
+
+<form method = "get" action = "{% url 'download' file.download_token %}">
+  <button type = "submit">Download</button>
+</form>

@@ -1,0 +1,23 @@
+<h2>One-time download link:</h2>
+
+<!-- Link to preview -->
+<input 
+  type = "text" 
+  id = "downloadLink" 
+  value = "https://{{ ngrok_domain}}/preview/{{ token }}/" readonly />
+
+<button onclick = "copyLink()" style = "margin-top: 10px;">Copy Link</button>
+
+<script>
+function copyLink() {
+  const input = document.getElementById("downloadLink");
+  navigator.clipboard.writeText(input.value)
+    .then(() => alert("Link copied to clipboard."))
+    .catch(err => alert("Failed to copy link: " + err));
+}
+</script>
+
+<!-- Link returning to upload page -->
+<p style = "margin-top: 20px;">
+  <a href = "{% url 'upload' %}">Upload Another File</a>
+</p>
