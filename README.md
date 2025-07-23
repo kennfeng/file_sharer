@@ -1,2 +1,2 @@
 # filer-sharer
-# Run Local + Public then Ngrok Public
+# Run Ngrok, change link, then public settings + local settings
