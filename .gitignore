@@ -1,5 +1,29 @@
+# Environment variables
 *.env
-uploads/
+.env
+
+# Virtual environment
+venv/
+env/
+ENV/
+.venv/
+
+# Django
 *.pyc
 __pycache__/
 db.sqlite3
+*.log
+
+# Media files
+uploads/
+media/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
