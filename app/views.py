@@ -15,7 +15,12 @@ def upload_file(request):
             form = UploadForm(request.POST, request.FILES)
 
             if form.is_valid():
-                file = form.save()
+                try:
+                    file = form.save()
+                    logger.info(f"File saved: {file.file.name}")
+                except Exception as e:
+                    logger.error(f"form.save() failed: {e}", exc_info=True)
+                    raise
                 total_uploads = FileUpload.objects.count()
 
                 # File cleanup - works for both local and S3 storage
