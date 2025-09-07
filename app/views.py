@@ -15,32 +15,29 @@ def upload_file(request):
             form = UploadForm(request.POST, request.FILES)
 
             if form.is_valid():
+                # Delete all existing files before saving the new one
+                existing_files = FileUpload.objects.all()
+                logger.info(f"Found {existing_files.count()} existing files to delete")
+                
+                for old_file in existing_files:
+                    try:
+                        logger.info(f"Deleting file: {old_file.file.name} (ID: {old_file.id})")
+                        # Delete the file from storage
+                        old_file.file.delete(save=False)
+                        old_file.delete()
+                        logger.info(f"Successfully deleted file ID: {old_file.id}")
+                    except Exception as e:
+                        logger.error(f"Error deleting old file {old_file.id}: {str(e)}")
+                        # Continue with other files even if one fails
+                        old_file.delete()  # Delete the database record anyway
+
+                # Now save the new file
                 try:
                     file = form.save()
                     logger.info(f"File saved: {file.file.name}")
                 except Exception as e:
                     logger.error(f"form.save() failed: {e}", exc_info=True)
                     raise
-                total_uploads = FileUpload.objects.count()
-
-                # File cleanup
-                if total_uploads > 5:
-                    excess_files = FileUpload.objects.order_by('uploaded_at')[:total_uploads - 5]
-                    logger.info(f"Found {len(excess_files)} files to delete")
-
-                    for old_file in excess_files:
-                        try:
-                            logger.info(f"Deleting file: {old_file.file.name} (ID: {old_file.id})")
-                            # Delete the file from storage
-                            old_file.file.delete(save=False)
-                            old_file.delete()
-                            logger.info(f"Successfully deleted file ID: {old_file.id}")
-                        except Exception as e:
-                            logger.error(f"Error deleting old file {old_file.id}: {str(e)}")
-                            # Continue with other files even if one fails
-                            old_file.delete()  # Delete the database record anyway
-                else:
-                    logger.info("No cleanup needed - total uploads <= 5")
 
                 # Get the current domain for the download link
                 protocol = 'https' if request.is_secure() else 'http'
