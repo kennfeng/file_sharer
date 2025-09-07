@@ -15,6 +15,7 @@ services:
           name: file-sharer-db
           property: connectionString
 
+databases:
   - type: pserv
     name: file-sharer-db
     env: postgresql
