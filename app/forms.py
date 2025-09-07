@@ -3,7 +3,7 @@ from .models import FileUpload
 
 ALLOWED_EXTENSIONS = [
     'txt', 'pdf', 'jpg', 'jpeg', 'png',
-    'mp4', 'mov', 'avi', 'mkv', 'webm', 'flv'
+    'mp4', 'mov', 'avi', 'mkv', 'webm', 'flv', 'wav'
 ]
 
 class UploadForm(forms.ModelForm):
