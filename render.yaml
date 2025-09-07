@@ -1,3 +1,7 @@
+databases:
+  - name: file-sharer-db
+    plan: free
+
 services:
   - type: web
     name: file-sharer-app
@@ -14,10 +18,3 @@ services:
         fromDatabase:
           name: file-sharer-db
           property: connectionString
-
-databases:
-  - type: pserv
-    name: file-sharer-db
-    env: postgresql
-    plan: free
-    ipAllowList: []
