@@ -9,7 +9,7 @@ class UploadForm(forms.ModelForm):
     # Max file upload size
     def clean_file(self):
         file = self.cleaned_data.get('file')
-        max_size_mb = 50
+        max_size_mb = 500
         
         if file and file.size > max_size_mb * 1024 * 1024:
             raise forms.ValidationError(f'File size exceeds {max_size_mb} MB limit.')
