@@ -1,4 +1,9 @@
 <h2>Upload a file</h2>
+{% if error %}
+  <div style="color: red; margin-bottom: 10px;">
+    {{ error }}
+  </div>
+{% endif %}
 <form method = "post" enctype = "multipart/form-data">
   {% csrf_token %}
   {{ form.as_p }}

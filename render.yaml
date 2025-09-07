@@ -14,14 +14,6 @@ services:
         fromDatabase:
           name: file-sharer-db
           property: connectionString
-      - key: AWS_ACCESS_KEY_ID
-        sync: false
-      - key: AWS_SECRET_ACCESS_KEY
-        sync: false
-      - key: BUCKET_NAME
-        sync: false
-      - key: AWS_REGION
-        value: us-east-2
 
   - type: pserv
     name: file-sharer-db
