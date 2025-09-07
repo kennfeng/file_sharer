@@ -7,9 +7,8 @@ services:
     name: file-sharer-app
     env: python
     plan: free
-    preDeployCommand: python manage.py migrate --noinput
     buildCommand: pip install -r requirements.txt && python manage.py collectstatic --noinput
-    startCommand: gunicorn file_sharer.wsgi:application
+    startCommand: bash -c "python manage.py migrate && gunicorn file_sharer.wsgi:application"
     envVars:
       - key: DEBUG
         value: False
