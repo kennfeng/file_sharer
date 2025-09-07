@@ -1,9 +1,9 @@
 services:
   - type: web
-    name: file-sharer
+    name: file-sharer-app
     env: python
     plan: free
-    buildCommand: pip install -r requirements.txt && python manage.py migrate
+    buildCommand: pip install -r requirements.txt && python manage.py migrate && python manage.py collectstatic --noinput
     startCommand: gunicorn file_sharer.wsgi:application
     envVars:
       - key: DEBUG
