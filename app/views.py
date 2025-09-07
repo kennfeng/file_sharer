@@ -21,7 +21,9 @@ def upload_file(request):
                     old_file.file.delete(save = False)
                     old_file.delete()
 
-            return render(request, 'link.html', {'token': file.download_token, 'ngrok_domain': settings.NGROK_DOMAIN,} )
+            # Get the current domain for the download link
+            domain = request.get_host()
+            return render(request, 'link.html', {'token': file.download_token, 'domain': domain})
     else:
         form = UploadForm()
     return render(request, 'upload.html', {'form': form})

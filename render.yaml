@@ -1,0 +1,30 @@
+services:
+  - type: web
+    name: file-sharer
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements.txt && python manage.py migrate
+    startCommand: gunicorn file_sharer.wsgi:application
+    envVars:
+      - key: DEBUG
+        value: False
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: file-sharer-db
+          property: connectionString
+      - key: AWS_ACCESS_KEY_ID
+        sync: false
+      - key: AWS_SECRET_ACCESS_KEY
+        sync: false
+      - key: BUCKET_NAME
+        sync: false
+      - key: AWS_REGION
+        value: us-east-2
+
+  - type: pserv
+    name: file-sharer-db
+    env: postgresql
+    plan: free
+    ipAllowList: []
