@@ -9,6 +9,9 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+from ratelimit.decorators import ratelimit
+
+@ratelimit(key='ip', rate='10/m', block=True) # Limit to 10 uploads per minute per IP
 def upload_file(request):
     if request.method == 'POST':
         try:
