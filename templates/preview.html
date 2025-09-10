@@ -1,8 +1,10 @@
-<h2>File Ready for Download</h2>
+<div class="container" style="max-width: 600px; margin: 50px auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+  <h2>File Ready for Download</h2>
 
-<p><strong>File Name:</strong> {{ file.file.name|slice:"0:" }}</p>
-<p>This link can only be used once.</p>
+  <p style="font-size: 1.1em; margin-bottom: 15px;"><strong>File Name:</strong> {{ file.file.name|slice:"0:" }}</p>
+  <p style="font-style: italic; color: #666;">This link can only be used once.</p>
 
-<form method = "get" action = "{% url 'download' file.download_token %}">
-  <button type = "submit">Download</button>
-</form>
+  <form method="get" action="{% url 'download' file.download_token %}" style="text-align: center;">
+    <button type="submit" style="background-color: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px;">Download</button>
+  </form>
+</div>
