@@ -1,0 +1,22 @@
+name: auto refresh db
+on:
+  schedule:
+    - cron: '0 0 1,15 * *'
+  workflow_dispatch:      # Allows you to click a button in GitHub to run it manually
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+      - name: Install dependencies
+        run: pip install requests python-dotenv
+      - name: Run Remake Script
+        env:
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+        run: |
+          python render_db_manager.py remake --name your-db-name --service-name your-web-app-name
