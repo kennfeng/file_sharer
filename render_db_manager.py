@@ -80,19 +80,17 @@ def wait_for_ready(api_key, db_id):
     raise Exception("Timed out waiting for database.")
 
 def get_external_url(api_key, db_id):
-    """Gets the external connection URL from the connection-info endpoint."""
+    """Builds a full postgres:// URL from Render's connection-info."""
     response = requests.get(f"{RENDER_API_URL}/postgres/{db_id}/connection-info", headers=get_headers(api_key))
     response.raise_for_status()
     data = response.json()
-    print(f"📦 Raw connection-info response: {data}")  # DEBUG
 
-    # Try every possible key name Render might use
-    url = (data.get('externalConnectionURL')
-        or data.get('externalUrl')
-        or data.get('connectionString')
-        or data.get('external_connection_url')
-        or data.get('url'))
-    return url
+    ext_string = data.get('externalConnectionString', '')
+    password   = data.get('password', '')
+
+    full_url = f"postgresql://db_user:{password}@{ext_string}"
+    return full_url
+
 
 def list_services(api_key):
     response = requests.get(f"{RENDER_API_URL}/services", headers=get_headers(api_key))
