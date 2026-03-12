@@ -19,4 +19,4 @@ jobs:
         env:
           RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
         run: |
-          python render_db_manager.py remake --name your-db-name --service-name your-web-app-name
+          python render_db_manager.py remake --name db1 --service-name file_sharer
