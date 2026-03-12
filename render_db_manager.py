@@ -20,35 +20,29 @@ def get_owner_id(api_key):
 def list_postgres(api_key):
     response = requests.get(f"{RENDER_API_URL}/postgres", headers=get_headers(api_key))
     response.raise_for_status()
-    raw = response.json()
-    print(f"📦 Raw postgres list response: {raw}")  # DEBUG: show exact format
-    return raw
+    return response.json()
 
 def delete_all_postgres(api_key):
     databases = list_postgres(api_key)
     if not databases:
         print("No existing databases found.")
         return
-
     for item in databases:
-        # Try every possible key structure Render might return
-        db_id   = item.get('id') or item.get('postgres', {}).get('id') or item.get('database', {}).get('id')
-        db_name = item.get('name') or item.get('postgres', {}).get('name') or item.get('database', {}).get('name')
-        
+        # From debug: data is nested under 'postgres' key
+        db = item.get('postgres') or item
+        db_id   = db.get('id')
+        db_name = db.get('name')
         if not db_id:
-            print(f"⚠️ Could not extract ID from item: {item}")
+            print(f"⚠️ Could not extract ID from: {item}")
             continue
-        
         print(f"🗑️ Deleting '{db_name}' (ID: {db_id})...")
         resp = requests.delete(f"{RENDER_API_URL}/postgres/{db_id}", headers=get_headers(api_key))
         print(f"   Delete status: {resp.status_code}")
-
     print("⏸️ Waiting 90 seconds for Render to fully process deletions...")
     time.sleep(90)
 
 def create_postgres(api_key, base_name, plan="free"):
     owner_id = get_owner_id(api_key)
-    # Use a timestamp suffix so the service name is ALWAYS unique
     unique_name = f"{base_name}-{int(time.time())}"
     payload = {
         "databaseName": "db_" + str(int(time.time()))[-6:],
@@ -61,15 +55,12 @@ def create_postgres(api_key, base_name, plan="free"):
     }
     print(f"🚀 Creating Postgres instance '{unique_name}'...")
     response = requests.post(f"{RENDER_API_URL}/postgres", json=payload, headers=get_headers(api_key))
-    
     if not response.ok:
         print(f"❌ Create failed: {response.status_code} - {response.text}")
         response.raise_for_status()
-
+    # From debug: create response is FLAT (no nesting)
     data = response.json()
-    print(f"📦 Raw create response: {data}")  # DEBUG
-    db_id = data.get('id') or data.get('postgres', {}).get('id') or data.get('database', {}).get('id')
-    return db_id, unique_name
+    return data['id']
 
 def wait_for_ready(api_key, db_id):
     print("⏳ Waiting for database to become available...")
@@ -77,7 +68,8 @@ def wait_for_ready(api_key, db_id):
         try:
             response = requests.get(f"{RENDER_API_URL}/postgres/{db_id}", headers=get_headers(api_key))
             data = response.json()
-            status = data.get('status') or data.get('postgres', {}).get('status') or data.get('database', {}).get('status')
+            # From debug: status is flat on GET single DB too
+            status = data.get('status') or data.get('postgres', {}).get('status')
             print(f"   Status: {status}")
             if status == 'available':
                 print("✅ Database is ready!")
@@ -87,19 +79,57 @@ def wait_for_ready(api_key, db_id):
         time.sleep(20)
     raise Exception("Timed out waiting for database.")
 
+def get_external_url(api_key, db_id):
+    """Gets the external connection URL from the connection-info endpoint."""
+    response = requests.get(f"{RENDER_API_URL}/postgres/{db_id}/connection-info", headers=get_headers(api_key))
+    response.raise_for_status()
+    data = response.json()
+    print(f"📦 Raw connection-info response: {data}")  # DEBUG
+
+    # Try every possible key name Render might use
+    url = (data.get('externalConnectionURL')
+        or data.get('externalUrl')
+        or data.get('connectionString')
+        or data.get('external_connection_url')
+        or data.get('url'))
+    return url
+
 def list_services(api_key):
     response = requests.get(f"{RENDER_API_URL}/services", headers=get_headers(api_key))
     response.raise_for_status()
     return response.json()
 
 def update_render_env_var(api_key, service_id, key, value):
+    """Uses the BULK env-var update endpoint which is more reliable."""
     print(f"🌐 Updating env var '{key}'...")
-    payload = {"value": value}
-    response = requests.put(
-        f"{RENDER_API_URL}/services/{service_id}/env-vars/{key}",
-        json=payload,
+    # First get all existing env vars so we don't wipe them
+    existing_resp = requests.get(
+        f"{RENDER_API_URL}/services/{service_id}/env-vars",
         headers=get_headers(api_key)
     )
+    existing = existing_resp.json() if existing_resp.ok else []
+    print(f"   Existing env vars count: {len(existing)}")
+
+    # Build the updated list
+    env_vars = []
+    found = False
+    for e in existing:
+        ev = e.get('envVar') or e
+        if ev.get('key') == key:
+            env_vars.append({"key": key, "value": value})
+            found = True
+        else:
+            env_vars.append({"key": ev['key'], "value": ev.get('value', '')})
+    if not found:
+        env_vars.append({"key": key, "value": value})
+
+    # PUT the full list back
+    response = requests.put(
+        f"{RENDER_API_URL}/services/{service_id}/env-vars",
+        json=env_vars,
+        headers=get_headers(api_key)
+    )
+    print(f"   Env var update status: {response.status_code} - {response.text[:200]}")
     response.raise_for_status()
     print("✅ Env var updated!")
 
@@ -123,28 +153,29 @@ def main():
         service_match = None
         for s in services:
             item = s.get('service') or s
-            print(f"   Found service: {item.get('name')}")
             if item.get('name') == args.service_name:
                 service_match = item
                 break
         if not service_match:
             raise Exception(f"Service '{args.service_name}' not found!")
+        print(f"   ✅ Found service ID: {service_match['id']}")
 
-        # 2. Delete ALL databases
+        # 2. Delete ALL existing databases
         delete_all_postgres(api_key)
 
-        # 3. Create fresh DB with unique name
-        db_id, db_name = create_postgres(api_key, args.name, plan=args.plan)
+        # 3. Create fresh DB
+        db_id = create_postgres(api_key, args.name, plan=args.plan)
         wait_for_ready(api_key, db_id)
 
-        # 4. Update env var
-        conn_resp = requests.get(f"{RENDER_API_URL}/postgres/{db_id}/connection-info", headers=get_headers(api_key))
-        conn_resp.raise_for_status()
-        external_url = conn_resp.json().get('externalConnectionURL')
+        # 4. Get the external URL
+        external_url = get_external_url(api_key, db_id)
         print(f"🔗 External URL: {external_url}")
+        if not external_url:
+            raise Exception("Could not find external URL in connection-info response!")
 
+        # 5. Update the web service env var
         update_render_env_var(api_key, service_match['id'], "DATABASE_URL", external_url)
-        print(f"✨ Done! New database '{db_name}' is live.")
+        print("✨ All done! Database refreshed and app updated.")
 
 if __name__ == "__main__":
     main()
